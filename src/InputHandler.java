@@ -19,7 +19,17 @@ public class InputHandler {
         bind("pressed RIGHT", "rightPressed", () -> engine.setMovingRight(true));
         bind("released RIGHT", "rightReleased", () -> engine.setMovingRight(false));
         bind("pressed SPACE", "shoot", engine::shoot);
+        bind("pressed ENTER", "enter", this::handleEnter);
+        bind("pressed P", "pause", engine::togglePause);
         bind("pressed R", "restart", engine::restart);
+    }
+
+    private void handleEnter() {
+        if (engine.getGameState().getStatus() == GameState.Status.START_SCREEN) {
+            engine.startGame();
+        } else if (engine.getGameState().getStatus() == GameState.Status.GAME_OVER) {
+            engine.restart();
+        }
     }
 
     private void bind(String keyStrokeText, String actionName, Runnable action) {

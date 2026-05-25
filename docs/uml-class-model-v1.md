@@ -1,6 +1,6 @@
 # Version 1 UML Class Model
 
-本文件描述 Version 1 的 class model。這一版的目標是「最小可玩」，所以模型保留清楚分工，但不過度抽象。
+本文件保留 Version 1 的 class model。Version 1 的目標是「最小可玩版本」，所以 class 數量少，規則集中在 `GameEngine`，尚未加入生命、敵人子彈、防護牆與關卡系統。
 
 ## Class Diagram
 
@@ -140,43 +140,43 @@ classDiagram
     GamePanel ..> InputHandler : creates
     InputHandler --> GameEngine : sends commands
     GameEngine *-- GameState : owns
-    GameState --> Status : uses
     GameEngine *-- Player : owns
     GameEngine *-- AlienFleet : owns
     GameEngine *-- CollisionManager : owns
     GameEngine o-- Bullet : manages
+    GameState --> Status : uses
     AlienFleet o-- Alien : manages
     CollisionManager ..> Bullet : checks
     CollisionManager ..> Alien : checks
     GameRenderer ..> GameEngine : reads
 ```
 
-## 責任摘要
+## Class 責任摘要
 
-| Class | 主要責任 |
+| Class | Version 1 責任 |
 | --- | --- |
-| `Main` | 程式進入點，使用 `SwingUtilities.invokeLater` 啟動 Swing UI。 |
-| `GameWindow` | 建立 `JFrame`，設定視窗屬性，放入 `GamePanel`。 |
-| `GamePanel` | Swing 畫布，啟動 `Swing Timer`，每一幀呼叫 `engine.update()` 與 `repaint()`。 |
-| `GameEngine` | 遊戲核心流程，更新玩家、子彈、外星人、碰撞、分數與勝敗。 |
-| `GameState` | 儲存分數與遊戲狀態。 |
-| `Player` | 玩家飛船的位置、尺寸、移動與碰撞範圍。 |
-| `Alien` | 單一外星人的位置、尺寸、存活狀態與碰撞範圍。 |
-| `AlienFleet` | 管理外星人群體排列、移動方向、碰邊下降與是否全滅。 |
-| `Bullet` | 玩家子彈的位置、速度、移動與是否離開畫面。 |
-| `CollisionManager` | 判斷子彈與外星人是否相交，並通知分數更新。 |
-| `InputHandler` | 使用 Swing Key Bindings 綁定按鍵，不使用 `KeyListener`。 |
-| `GameRenderer` | 使用 Java2D 繪製背景、HUD、玩家、外星人、子彈與結束訊息。 |
+| `Main` | 程式進入點，啟動 Swing UI。 |
+| `GameWindow` | 建立 `JFrame` 並放入 `GamePanel`。 |
+| `GamePanel` | 作為遊戲畫布，使用 `Swing Timer` 觸發 update 與 repaint。 |
+| `GameEngine` | 協調玩家、子彈、外星人、碰撞、勝利與失敗。 |
+| `GameState` | 保存分數與遊戲狀態。 |
+| `Player` | 玩家飛船的位置、移動與碰撞範圍。 |
+| `Alien` | 單一外星人的位置、存活狀態與碰撞範圍。 |
+| `AlienFleet` | 管理外星人群體排列、左右移動與碰邊下降。 |
+| `Bullet` | 玩家子彈的位置、速度與碰撞範圍。 |
+| `CollisionManager` | 處理玩家子彈與外星人的碰撞。 |
+| `InputHandler` | 使用 Key Bindings 處理鍵盤輸入。 |
+| `GameRenderer` | 使用 Java2D 繪製遊戲畫面。 |
 
-## Version 1 的設計取捨
+## Version 1 設計重點
 
-- 沒有抽象父類別，例如 `GameObject`，因為目前物件種類少，先保持初學者容易閱讀。
-- 子彈限制為畫面上一次一發，讓碰撞與節奏更簡單。
-- `GameRenderer` 只讀取 `GameEngine` 狀態，不修改遊戲資料。
-- `InputHandler` 不直接移動玩家，而是通知 `GameEngine` 設定移動旗標。
-- `AlienFleet` 管理群體邏輯，單一 `Alien` 不知道整隊外星人的移動規則。
+- 不使用外部遊戲引擎。
+- 使用 `Swing Timer` 作為 game loop。
+- 使用 Key Bindings，不使用 `KeyListener`。
+- 尚未建立複雜抽象，例如 `GameObject` 或 `Entity`。
+- 先用少量 class 建立「能玩」的基礎，再為後續版本保留擴充空間。
 
-## 主要流程
+## Version 1 流程
 
 ```text
 Main
@@ -193,13 +193,12 @@ Main
           -> GameRenderer.render()
 ```
 
-## 後續版本可能新增的模型
+## 往 Version 2 的演化方向
 
-Version 2 或 Version 3 可以考慮加入：
+Version 1 的限制也正是 Version 2 的改進起點：
 
-- `EnemyBullet`: 外星人子彈。
-- `Lives` 或在 `GameState` 加入玩家生命值。
-- `LevelConfig`: 關卡設定，例如外星人速度、排數、分數。
-- `SpriteLoader`: 圖片素材載入。
-- `SoundManager`: 音效播放。
-- `GameObject` 或 `Entity`: 當可移動物件變多時再抽象化共同行為。
+- `GameState` 需要從簡單勝敗擴充成開始、暫停、過關、結束等狀態。
+- `Bullet` 需要區分玩家子彈與敵人子彈。
+- `CollisionManager` 需要集中處理更多碰撞種類。
+- `GameEngine` 需要把分數與關卡規則拆出去，避免變成過大的 class。
+- 遊戲物件需要加入 `Shield` 等新角色。

@@ -8,8 +8,9 @@ import java.awt.RenderingHints;
 public class GameRenderer {
     private static final Color BACKGROUND = new Color(12, 16, 28);
     private static final Color PLAYER_COLOR = new Color(86, 210, 132);
-    private static final Color ALIEN_COLOR = new Color(236, 92, 99);
-    private static final Color BULLET_COLOR = new Color(255, 230, 110);
+    private static final Color PLAYER_BULLET_COLOR = new Color(255, 230, 110);
+    private static final Color ENEMY_BULLET_COLOR = new Color(104, 190, 255);
+    private static final Color SHIELD_COLOR = new Color(88, 190, 172);
     private static final Color TEXT_COLOR = new Color(235, 240, 248);
     private static final Font HUD_FONT = new Font("SansSerif", Font.BOLD, 18);
     private static final Font MESSAGE_FONT = new Font("SansSerif", Font.BOLD, 46);
@@ -18,11 +19,12 @@ public class GameRenderer {
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
         drawBackground(g);
-        drawHud(g, engine.getGameState());
+        drawHud(g, engine);
+        drawShields(g, engine);
         drawPlayer(g, engine.getPlayer());
         drawAliens(g, engine.getAlienFleet());
         drawBullets(g, engine);
-        drawEndMessage(g, engine.getGameState());
+        drawOverlayMessage(g, engine.getGameState());
     }
 
     private void drawBackground(Graphics2D g) {
@@ -30,12 +32,16 @@ public class GameRenderer {
         g.fillRect(0, 0, GamePanel.WIDTH, GamePanel.HEIGHT);
     }
 
-    private void drawHud(Graphics2D g, GameState gameState) {
+    private void drawHud(Graphics2D g, GameEngine engine) {
+        GameState gameState = engine.getGameState();
+
         g.setColor(TEXT_COLOR);
         g.setFont(HUD_FONT);
-        g.drawString("Score: " + gameState.getScore(), 18, 28);
+        g.drawString("Score: " + engine.getScoreManager().getScore(), 18, 28);
+        g.drawString("Level: " + engine.getLevelManager().getLevel(), 155, 28);
+        g.drawString("Lives: " + gameState.getLives(), 260, 28);
 
-        String controls = "Move: Left / Right   Shoot: Space   Restart: R";
+        String controls = "Enter: Start/Restart   P: Pause   Space: Shoot";
         int controlsX = GamePanel.WIDTH - g.getFontMetrics().stringWidth(controls) - 18;
         g.drawString(controls, controlsX, 28);
     }
@@ -62,7 +68,7 @@ public class GameRenderer {
                 continue;
             }
 
-            g.setColor(ALIEN_COLOR);
+            g.setColor(colorForAlien(alien));
             g.fillRoundRect(alien.getX(), alien.getY(), alien.getWidth(), alien.getHeight(), 8, 8);
 
             // Small eyes make the simple Java2D aliens easier to recognize.
@@ -73,18 +79,42 @@ public class GameRenderer {
     }
 
     private void drawBullets(Graphics2D g, GameEngine engine) {
-        g.setColor(BULLET_COLOR);
         for (Bullet bullet : engine.getBullets()) {
+            if (bullet.getType() == BulletType.PLAYER_BULLET) {
+                g.setColor(PLAYER_BULLET_COLOR);
+            } else {
+                g.setColor(ENEMY_BULLET_COLOR);
+            }
+
             g.fillRoundRect(bullet.getX(), bullet.getY(), Bullet.WIDTH, Bullet.HEIGHT, 4, 4);
         }
     }
 
-    private void drawEndMessage(Graphics2D g, GameState gameState) {
+    private void drawShields(Graphics2D g, GameEngine engine) {
+        for (Shield shield : engine.getShields()) {
+            if (shield.isDestroyed()) {
+                continue;
+            }
+
+            int visibleHeight = (int) (shield.getHeight() * shield.getHealthRatio());
+            int y = shield.getY() + shield.getHeight() - visibleHeight;
+
+            g.setColor(SHIELD_COLOR);
+            g.fillRoundRect(shield.getX(), y, shield.getWidth(), visibleHeight, 8, 8);
+
+            // Cut a small notch so the wall reads like a bunker instead of a plain rectangle.
+            g.setColor(BACKGROUND);
+            g.fillRect(shield.getX() + shield.getWidth() / 2 - 12, y + visibleHeight - 12, 24, 12);
+        }
+    }
+
+    private void drawOverlayMessage(Graphics2D g, GameState gameState) {
         if (gameState.isPlaying()) {
             return;
         }
 
-        String message = gameState.getStatus() == GameState.Status.YOU_WIN ? "YOU WIN" : "GAME OVER";
+        String message = messageForStatus(gameState.getStatus());
+        String hint = hintForStatus(gameState.getStatus());
 
         g.setFont(MESSAGE_FONT);
         FontMetrics metrics = g.getFontMetrics();
@@ -98,8 +128,55 @@ public class GameRenderer {
         g.drawString(message, x, y);
 
         g.setFont(HUD_FONT);
-        String restart = "Press R to restart";
-        int restartX = (GamePanel.WIDTH - g.getFontMetrics().stringWidth(restart)) / 2;
-        g.drawString(restart, restartX, y + 38);
+        int hintX = (GamePanel.WIDTH - g.getFontMetrics().stringWidth(hint)) / 2;
+        g.drawString(hint, hintX, y + 38);
+    }
+
+    private Color colorForAlien(Alien alien) {
+        if (alien.getScoreValue() >= 40) {
+            return new Color(255, 112, 112);
+        }
+
+        if (alien.getScoreValue() >= 30) {
+            return new Color(255, 166, 94);
+        }
+
+        if (alien.getScoreValue() >= 20) {
+            return new Color(232, 206, 86);
+        }
+
+        return new Color(167, 112, 255);
+    }
+
+    private String messageForStatus(GameState.Status status) {
+        if (status == GameState.Status.START_SCREEN) {
+            return "SPACE INVADER";
+        }
+
+        if (status == GameState.Status.PAUSED) {
+            return "PAUSED";
+        }
+
+        if (status == GameState.Status.LEVEL_CLEARED) {
+            return "LEVEL CLEARED";
+        }
+
+        return "GAME OVER";
+    }
+
+    private String hintForStatus(GameState.Status status) {
+        if (status == GameState.Status.START_SCREEN) {
+            return "Press Enter to start";
+        }
+
+        if (status == GameState.Status.PAUSED) {
+            return "Press P to continue";
+        }
+
+        if (status == GameState.Status.LEVEL_CLEARED) {
+            return "Next level incoming";
+        }
+
+        return "Press Enter to restart";
     }
 }

@@ -5,13 +5,15 @@ public class Alien {
     private int y;
     private final int width;
     private final int height;
+    private final int scoreValue;
     private boolean alive;
 
-    public Alien(int x, int y, int width, int height) {
+    public Alien(int x, int y, int width, int height, int scoreValue) {
         this.x = x;
         this.y = y;
         this.width = width;
         this.height = height;
+        this.scoreValue = scoreValue;
         this.alive = true;
     }
 
@@ -46,5 +48,9 @@ public class Alien {
 
     public int getHeight() {
         return height;
+    }
+
+    public int getScoreValue() {
+        return scoreValue;
     }
 }

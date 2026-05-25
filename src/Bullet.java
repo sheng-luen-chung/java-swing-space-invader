@@ -7,19 +7,25 @@ public class Bullet {
     private int x;
     private int y;
     private final int speed;
+    private final BulletType type;
 
-    public Bullet(int x, int y, int speed) {
+    public Bullet(int x, int y, int speed, BulletType type) {
         this.x = x;
         this.y = y;
         this.speed = speed;
+        this.type = type;
     }
 
     public void update() {
-        y -= speed;
+        if (type == BulletType.PLAYER_BULLET) {
+            y -= speed;
+        } else {
+            y += speed;
+        }
     }
 
-    public boolean isOffScreen() {
-        return y + HEIGHT < 0;
+    public boolean isOffScreen(int boardHeight) {
+        return y + HEIGHT < 0 || y > boardHeight;
     }
 
     public Rectangle getBounds() {
@@ -32,5 +38,9 @@ public class Bullet {
 
     public int getY() {
         return y;
+    }
+
+    public BulletType getType() {
+        return type;
     }
 }

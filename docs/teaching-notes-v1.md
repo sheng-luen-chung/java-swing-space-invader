@@ -2,6 +2,8 @@
 
 這份筆記給教學訓練使用，目標是讓初學者理解一個簡單 Swing 遊戲如何被拆成可維護的 class。
 
+雖然目前程式已進入 Version 2，但這份文件刻意保留 Version 1 的教學視角，方便比較版本演化。
+
 ## 學習目標
 
 完成 Version 1 後，學生應該能理解：
@@ -70,20 +72,27 @@ JComponent.WHEN_IN_FOCUSED_WINDOW
 
 這樣做的好處是：之後改美術，不容易動到規則；之後改規則，也不容易弄壞繪圖。
 
+## 和 Version 2 的銜接
+
+學完 Version 1 後，可以接著看：
+
+- [Version 2 UML Class Model](uml-class-model-v2.md)
+- [Version 2 完整規則與設計重點](version2-full-rules.md)
+- [架構演化紀錄](architecture-evolution.md)
+
+重點觀察：
+
+- `GameState` 為什麼不再保存 score。
+- `ScoreManager` 與 `LevelManager` 為什麼被拆出來。
+- `CollisionManager` 如何從單一碰撞擴充成多種碰撞。
+- `BulletType` 如何讓同一個 `Bullet` 支援玩家與敵人。
+
 ## 可安排的練習題
 
 - 修改玩家移動速度。
 - 修改外星人排數與欄數。
 - 修改每個外星人的分數。
-- 允許畫面上同時存在多發子彈。
+- 允許畫面上同時存在更多玩家子彈。
 - 讓外星人越來越快。
-- 在 `GAME OVER` 時顯示最後分數。
+- 在 `GAME_OVER` 時顯示最後分數。
 - 把玩家飛船改成不同 Java2D 圖形。
-
-## 常見除錯方向
-
-- 如果按鍵沒有反應，先確認遊戲視窗是否取得焦點。
-- 如果畫面沒有更新，檢查 Timer 是否有 `start()`。
-- 如果子彈沒有消失，檢查 `Bullet.isOffScreen()`。
-- 如果打中外星人沒有加分，檢查 `CollisionManager` 是否有執行 callback。
-- 如果外星人不下降，檢查 `AlienFleet.willHitSide()` 的邊界判斷。
