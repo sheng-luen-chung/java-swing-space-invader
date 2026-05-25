@@ -43,6 +43,22 @@ javac -d out src\*.java
 java -cp out Main
 ```
 
+### Runnable Jar
+
+最新可執行 jar 產生在：
+
+```text
+dist/space-invader-v3.jar
+```
+
+執行方式：
+
+```powershell
+java -jar dist\space-invader-v3.jar
+```
+
+這個 jar 已包含遊戲需要的 wav 音效資源。
+
 ## 操作方式
 
 | 按鍵 | 功能 |

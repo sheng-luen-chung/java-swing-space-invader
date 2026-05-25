@@ -1,5 +1,7 @@
 *.class
 out/
 bin/
+build/
 .vscode/
 data/highscore.txt
+dist/data/

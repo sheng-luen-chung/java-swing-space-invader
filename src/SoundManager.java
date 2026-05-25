@@ -1,4 +1,6 @@
 import java.io.File;
+import java.io.BufferedInputStream;
+import java.io.InputStream;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -11,7 +13,34 @@ public class SoundManager {
     private final Set<String> warnedSounds = new HashSet<>();
 
     public void play(String soundName) {
-        File file = resolveSoundFile(soundName);
+        String fileName = normalizeFileName(soundName);
+
+        if (playFromResource(fileName, soundName)) {
+            return;
+        }
+
+        playFromFile(fileName, soundName);
+    }
+
+    private boolean playFromResource(String fileName, String soundName) {
+        String resourcePath = "/assets/sounds/" + fileName;
+        InputStream inputStream = SoundManager.class.getResourceAsStream(resourcePath);
+
+        if (inputStream == null) {
+            return false;
+        }
+
+        try (AudioInputStream stream = AudioSystem.getAudioInputStream(new BufferedInputStream(inputStream))) {
+            playClip(stream);
+            return true;
+        } catch (Exception ex) {
+            warnOnce(soundName, "could not play bundled sound: " + ex.getMessage());
+            return true;
+        }
+    }
+
+    private void playFromFile(String fileName, String soundName) {
+        File file = GameConfig.SOUND_DIR.resolve(fileName).toFile();
 
         if (!file.exists()) {
             warnOnce(soundName, "sound file not found: " + file.getPath());
@@ -19,22 +48,25 @@ public class SoundManager {
         }
 
         try (AudioInputStream stream = AudioSystem.getAudioInputStream(file)) {
-            Clip clip = AudioSystem.getClip();
-            clip.addLineListener(event -> {
-                if (event.getType() == LineEvent.Type.STOP) {
-                    clip.close();
-                }
-            });
-            clip.open(stream);
-            clip.start();
+            playClip(stream);
         } catch (Exception ex) {
             warnOnce(soundName, "could not play sound: " + ex.getMessage());
         }
     }
 
-    private File resolveSoundFile(String soundName) {
-        String fileName = soundName.endsWith(".wav") ? soundName : soundName + ".wav";
-        return GameConfig.SOUND_DIR.resolve(fileName).toFile();
+    private void playClip(AudioInputStream stream) throws Exception {
+        Clip clip = AudioSystem.getClip();
+        clip.addLineListener(event -> {
+            if (event.getType() == LineEvent.Type.STOP) {
+                clip.close();
+            }
+        });
+        clip.open(stream);
+        clip.start();
+    }
+
+    private String normalizeFileName(String soundName) {
+        return soundName.endsWith(".wav") ? soundName : soundName + ".wav";
     }
 
     private void warnOnce(String soundName, String message) {
