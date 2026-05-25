@@ -97,6 +97,7 @@ assets/sounds/
 
 | 文件 | 用途 |
 | --- | --- |
+| [Latest API Javadoc](docs/api/index.html) | 最新版本 Java API 文件。 |
 | [Version 1 UML Class Model](docs/uml-class-model-v1.md) | 保留 V1 最小可玩版本的 class model。 |
 | [Version 2 UML Class Model](docs/uml-class-model-v2.md) | 保留 V2 完整規則版的 class model。 |
 | [Version 3 UML Class Model](docs/uml-class-model-v3.md) | 說明目前 V3 的 class model。 |
