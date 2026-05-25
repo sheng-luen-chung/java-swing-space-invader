@@ -1,6 +1,8 @@
 # Version 1 UML Class Model
 
-本文件保留 Version 1 的 class model。Version 1 的目標是「最小可玩版本」，所以 class 數量少，規則集中在 `GameEngine`，尚未加入生命、敵人子彈、防護牆與關卡系統。
+本文件保留 Version 1 的 class model。Version 1 是「最小可玩版本」，重點是建立 Java Swing 遊戲的基本骨架：視窗、畫布、Timer game loop、Key Bindings、玩家、外星人、子彈、碰撞與分數。
+
+目前專案已進入 Version 3；如果要看目前最新模型，請看 [Version 3 UML Class Model](uml-class-model-v3.md)。
 
 ## Class Diagram
 
@@ -36,8 +38,6 @@ classDiagram
         -boolean movingLeft
         -boolean movingRight
         +update() void
-        +setMovingLeft(boolean movingLeft) void
-        +setMovingRight(boolean movingRight) void
         +shoot() void
         +restart() void
         +getGameState() GameState
@@ -64,81 +64,20 @@ classDiagram
         GAME_OVER
     }
 
-    class Player {
-        -int x
-        -int y
-        -int width
-        -int height
-        +moveLeft(int speed) void
-        +moveRight(int speed, int boardWidth) void
-        +getBounds() Rectangle
-        +getCenterX() int
-        +getX() int
-        +setX(int x) void
-        +getY() int
-        +getWidth() int
-        +getHeight() int
-    }
-
-    class Alien {
-        -int x
-        -int y
-        -int width
-        -int height
-        -boolean alive
-        +move(int dx, int dy) void
-        +getBounds() Rectangle
-        +isAlive() boolean
-        +destroy() void
-        +getX() int
-        +getY() int
-        +getWidth() int
-        +getHeight() int
-    }
-
-    class AlienFleet {
-        -List~Alien~ aliens
-        -int direction
-        +reset() void
-        +update(int boardWidth) void
-        +allAliensDestroyed() boolean
-        +hasReachedY(int y) boolean
-        +getAliens() List~Alien~
-    }
-
-    class Bullet {
-        +WIDTH int
-        +HEIGHT int
-        -int x
-        -int y
-        -int speed
-        +update() void
-        +isOffScreen() boolean
-        +getBounds() Rectangle
-        +getX() int
-        +getY() int
-    }
-
-    class CollisionManager {
-        +handleBulletAlienCollisions(List~Bullet~ bullets, List~Alien~ aliens, Runnable onAlienDestroyed) void
-    }
-
-    class InputHandler {
-        -JComponent component
-        -GameEngine engine
-        +registerKeyBindings() void
-    }
-
-    class GameRenderer {
-        +render(Graphics2D g, GameEngine engine) void
-    }
+    class Player
+    class Alien
+    class AlienFleet
+    class Bullet
+    class CollisionManager
+    class InputHandler
+    class GameRenderer
 
     Main ..> GameWindow : creates
     GameWindow *-- GamePanel : contains
     GamePanel *-- GameEngine : owns
     GamePanel *-- GameRenderer : owns
     GamePanel ..> InputHandler : creates
-    InputHandler --> GameEngine : sends commands
+    InputHandler --> GameEngine : commands
     GameEngine *-- GameState : owns
     GameEngine *-- Player : owns
     GameEngine *-- AlienFleet : owns
@@ -151,54 +90,39 @@ classDiagram
     GameRenderer ..> GameEngine : reads
 ```
 
-## Class 責任摘要
+## Version 1 責任分工
 
-| Class | Version 1 責任 |
+| Class | 責任 |
 | --- | --- |
 | `Main` | 程式進入點，啟動 Swing UI。 |
 | `GameWindow` | 建立 `JFrame` 並放入 `GamePanel`。 |
-| `GamePanel` | 作為遊戲畫布，使用 `Swing Timer` 觸發 update 與 repaint。 |
-| `GameEngine` | 協調玩家、子彈、外星人、碰撞、勝利與失敗。 |
-| `GameState` | 保存分數與遊戲狀態。 |
-| `Player` | 玩家飛船的位置、移動與碰撞範圍。 |
-| `Alien` | 單一外星人的位置、存活狀態與碰撞範圍。 |
-| `AlienFleet` | 管理外星人群體排列、左右移動與碰邊下降。 |
-| `Bullet` | 玩家子彈的位置、速度與碰撞範圍。 |
-| `CollisionManager` | 處理玩家子彈與外星人的碰撞。 |
-| `InputHandler` | 使用 Key Bindings 處理鍵盤輸入。 |
-| `GameRenderer` | 使用 Java2D 繪製遊戲畫面。 |
+| `GamePanel` | 使用 `Swing Timer` 進行 game loop，並觸發 repaint。 |
+| `GameEngine` | 協調玩家、子彈、外星人、碰撞、勝敗與分數。 |
+| `GameState` | 保存遊戲狀態與分數。 |
+| `Player` | 玩家飛船位置、移動與碰撞範圍。 |
+| `Alien` | 單一外星人位置、存活狀態與碰撞範圍。 |
+| `AlienFleet` | 管理外星人群體移動與下降。 |
+| `Bullet` | 玩家子彈。 |
+| `CollisionManager` | 處理玩家子彈 vs 外星人。 |
+| `InputHandler` | 使用 Key Bindings 處理鍵盤。 |
+| `GameRenderer` | 使用 Java2D 繪製畫面。 |
 
-## Version 1 設計重點
+## V1 到 V2/V3 的演化
 
-- 不使用外部遊戲引擎。
-- 使用 `Swing Timer` 作為 game loop。
-- 使用 Key Bindings，不使用 `KeyListener`。
-- 尚未建立複雜抽象，例如 `GameObject` 或 `Entity`。
-- 先用少量 class 建立「能玩」的基礎，再為後續版本保留擴充空間。
+| 主題 | Version 1 | 後續演化 |
+| --- | --- | --- |
+| 分數 | 放在 `GameState` | V2 移到 `ScoreManager`。 |
+| 子彈 | 只有玩家子彈 | V2 新增 `BulletType` 支援敵人子彈。 |
+| 狀態 | `PLAYING`、`YOU_WIN`、`GAME_OVER` | V2/V3 新增開始、暫停、過關狀態。 |
+| 防護牆 | 無 | V2 新增 `Shield`。 |
+| 音效/動畫/高分 | 無 | V3 新增 `SoundManager`、`ExplosionEffect`、`HighScoreManager`。 |
 
-## Version 1 流程
+## 教學用途
 
-```text
-Main
-  -> GameWindow
-    -> GamePanel
-      -> Swing Timer tick
-        -> GameEngine.update()
-          -> update player
-          -> update bullets
-          -> update alien fleet
-          -> check collisions
-          -> check win / game over
-        -> GamePanel.repaint()
-          -> GameRenderer.render()
-```
+Version 1 適合用來教：
 
-## 往 Version 2 的演化方向
-
-Version 1 的限制也正是 Version 2 的改進起點：
-
-- `GameState` 需要從簡單勝敗擴充成開始、暫停、過關、結束等狀態。
-- `Bullet` 需要區分玩家子彈與敵人子彈。
-- `CollisionManager` 需要集中處理更多碰撞種類。
-- `GameEngine` 需要把分數與關卡規則拆出去，避免變成過大的 class。
-- 遊戲物件需要加入 `Shield` 等新角色。
+- Swing 視窗與 `JPanel`
+- `Swing Timer` game loop
+- Key Bindings
+- Java2D 基本繪圖
+- 將遊戲拆成 engine / renderer / input / model

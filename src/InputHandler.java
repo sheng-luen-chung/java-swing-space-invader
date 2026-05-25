@@ -27,6 +27,8 @@ public class InputHandler {
     private void handleEnter() {
         if (engine.getGameState().getStatus() == GameState.Status.START_SCREEN) {
             engine.startGame();
+        } else if (engine.getGameState().getStatus() == GameState.Status.LEVEL_CLEARED) {
+            engine.startNextLevel();
         } else if (engine.getGameState().getStatus() == GameState.Status.GAME_OVER) {
             engine.restart();
         }

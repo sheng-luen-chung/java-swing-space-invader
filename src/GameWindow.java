@@ -4,7 +4,7 @@ public class GameWindow {
     private final JFrame frame;
 
     public GameWindow() {
-        frame = new JFrame("Space Invader Version 2");
+        frame = new JFrame("Space Invader Version 3");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setResizable(false);
 

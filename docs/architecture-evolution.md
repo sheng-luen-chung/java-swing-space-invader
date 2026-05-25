@@ -1,5 +1,7 @@
 # 架構演化紀錄
 
+JDK baseline: source code remains compatible with JDK 8. Version 3 originally used Java 11 file APIs during high score work, but the implementation was changed back to Java 8-compatible `Files.readAllBytes` and `Files.write`.
+
 本文件記錄各版本之間的設計改良。目的不是只保存最後結果，而是留下「為什麼要改」與「下一版可以怎麼接」。
 
 ## V1 到 V2 的改良總覽
@@ -12,82 +14,60 @@
 | 子彈 | 只有玩家子彈 | `BulletType.PLAYER_BULLET` 與 `ENEMY_BULLET` | 支援敵人射擊，同一個 `Bullet` 仍可保持簡單。 |
 | 碰撞 | 玩家子彈 vs 外星人 | 四種碰撞集中處理 | 防止碰撞規則散落在多個 class。 |
 | 防護牆 | 無 | 新增 `Shield` | 加入 Space Invader 典型防守元素。 |
-| 外星人 | 同一分數、只移動 | 不同分數、可挑選射擊者 | 增加遊戲規則與教學上的策略性。 |
-| 輸入 | 移動、射擊、R 重開 | 加入 Enter 與 P | 支援開始、重開與暫停。 |
-| 繪圖 | 玩家、外星人、玩家子彈、分數 | 加入 lives、level、敵人子彈、防護牆、狀態 overlay | HUD 與狀態提示更完整。 |
+
+## V2 到 V3 的改良總覽
+
+| 主題 | Version 2 | Version 3 | 改良原因 |
+| --- | --- | --- | --- |
+| 開始畫面 | 基本 overlay | 標題、操作說明、high score | 更適合課堂展示。 |
+| 過關流程 | 倒數後自動下一關 | 顯示後等待 `ENTER` | 讓玩家掌握節奏，也更清楚示範狀態轉換。 |
+| Game Over | 顯示重開提示 | 顯示 final score 與 high score | 回饋更完整。 |
+| 音效 | 無 | 新增 `SoundManager` | 把體驗層獨立出來，不污染 `GamePanel`。 |
+| 動畫 | 無 | 新增 `ExplosionEffect` 與 `Particle` | 用 Java2D 展示簡單動畫設計。 |
+| 玩家受擊 | 只扣生命 | 扣生命並閃爍 | 增加可見 feedback。 |
+| 高分 | 無 | 新增 `HighScoreManager` | 示範簡單檔案 I/O。 |
+| 設定 | 常數分散在 class | 新增 `GameConfig` | 集中調整遊戲參數與路徑。 |
+| 執行教學 | 只說明按 Run | 補充多 class 專案的編譯/執行方式 | 避免學生用 `java src\Main.java` 或 Code Runner 執行失敗。 |
 
 ## GameEngine 的角色演化
 
 ### Version 1
 
-`GameEngine` 幾乎處理所有遊戲規則：
-
-- 玩家移動
-- 子彈更新
-- 外星人移動
-- 碰撞後加分
-- 勝利與失敗判斷
-
-這對最小版本是合理的，因為規則少，學生容易追蹤。
+`GameEngine` 幾乎處理所有遊戲規則，包含移動、子彈、外星人、碰撞後加分、勝敗判斷。這對最小版本是合理的，因為規則少，學生容易追蹤。
 
 ### Version 2
 
 規則增加後，`GameEngine` 改成流程協調者：
 
-- 仍負責每一幀的 update 順序。
 - 把分數交給 `ScoreManager`。
 - 把關卡難度交給 `LevelManager`。
 - 把碰撞細節交給 `CollisionManager`。
 - 把畫面呈現交給 `GameRenderer`。
 
-這樣 `GameEngine` 還是遊戲核心，但不需要知道所有細節。
+### Version 3
 
-## GameState 的演化
+體驗層增加後，`GameEngine` 仍然不直接處理音效格式或檔案細節，而是協調：
 
-Version 1 的 `GameState` 同時放狀態與分數。Version 2 後，分數移出，只留下「遊戲狀態」與「玩家生命」。
+- `SoundManager` 播放音效。
+- `HighScoreManager` 讀寫最高分。
+- `ExplosionEffect` 與 `Particle` 管理動畫資料。
+- `GameRenderer` 負責把動畫與 overlay 畫出來。
 
-這個改動讓 `GameState` 更像真正的狀態模型：
+## 執行方式的演化
 
-```text
-START_SCREEN -> PLAYING -> LEVEL_CLEARED -> PLAYING
-                         -> PAUSED -> PLAYING
-                         -> GAME_OVER -> PLAYING
+Version 3 後，文件明確提醒這是多 class Java 專案。
+
+錯誤方式：
+
+```powershell
+java src\Main.java
 ```
 
-## CollisionManager 的演化
+正確方式：
 
-Version 1：
-
-```text
-player bullet vs alien
+```powershell
+javac -d out src\*.java
+java -cp out Main
 ```
 
-Version 2：
-
-```text
-player bullet vs alien
-player bullet vs shield
-enemy bullet vs player
-enemy bullet vs shield
-```
-
-V2 的 `CollisionManager` 不直接加分或扣命，而是回傳 `CollisionResult`。這是刻意的分工：
-
-- `CollisionManager` 判斷「撞到了什麼」。
-- `GameEngine` 決定「撞到後遊戲規則如何改變」。
-- `ScoreManager` 負責「分數怎麼算」。
-- `GameState` 負責「生命與狀態怎麼保存」。
-
-## 為什麼 V2 還不建立 GameObject
-
-目前雖然有 `Player`、`Alien`、`Bullet`、`Shield`，但它們的行為差異仍然很大。
-
-現在就抽 `GameObject` 可能會讓初學者先看到抽象，而不是先理解遊戲規則。因此 V2 先保留明確 class。等 V3 若加入更多敵人種類、道具、爆炸效果或場景系統，再考慮抽象共用父類別。
-
-## V2 到 V3 的可能方向
-
-- `Shield` 從單一 health 改成多格破壞模型。
-- `Alien` 加入不同類型，可用 `AlienType` 表示。
-- `GameRenderer` 開始支援圖片素材，可加入 `SpriteLoader`。
-- 加入音效後，可新增 `SoundManager`。
-- 開始畫面、遊戲畫面、結束畫面變複雜時，可新增 `Screen` 或 `Scene` 架構。
+在 VS Code 中，請使用 Java extension 的 **Run**，不要使用 Code Runner 的 **Run Code**。

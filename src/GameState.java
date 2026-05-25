@@ -9,6 +9,7 @@ public class GameState {
 
     private Status status;
     private int lives;
+    private int finalScore;
 
     public GameState() {
         reset();
@@ -16,7 +17,8 @@ public class GameState {
 
     public void reset() {
         status = Status.START_SCREEN;
-        lives = 3;
+        lives = GameConfig.INITIAL_LIVES;
+        finalScore = 0;
     }
 
     public boolean isPlaying() {
@@ -47,5 +49,13 @@ public class GameState {
 
     public boolean hasNoLives() {
         return lives <= 0;
+    }
+
+    public int getFinalScore() {
+        return finalScore;
+    }
+
+    public void setFinalScore(int finalScore) {
+        this.finalScore = finalScore;
     }
 }

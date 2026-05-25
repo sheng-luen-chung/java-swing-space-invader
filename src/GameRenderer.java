@@ -21,10 +21,13 @@ public class GameRenderer {
         drawBackground(g);
         drawHud(g, engine);
         drawShields(g, engine);
-        drawPlayer(g, engine.getPlayer());
+        if (engine.isPlayerVisible()) {
+            drawPlayer(g, engine.getPlayer());
+        }
         drawAliens(g, engine.getAlienFleet());
         drawBullets(g, engine);
-        drawOverlayMessage(g, engine.getGameState());
+        drawExplosions(g, engine);
+        drawOverlayMessage(g, engine);
     }
 
     private void drawBackground(Graphics2D g) {
@@ -108,8 +111,21 @@ public class GameRenderer {
         }
     }
 
-    private void drawOverlayMessage(Graphics2D g, GameState gameState) {
+    private void drawExplosions(Graphics2D g, GameEngine engine) {
+        for (ExplosionEffect explosion : engine.getExplosions()) {
+            explosion.render(g);
+        }
+    }
+
+    private void drawOverlayMessage(Graphics2D g, GameEngine engine) {
+        GameState gameState = engine.getGameState();
+
         if (gameState.isPlaying()) {
+            return;
+        }
+
+        if (gameState.getStatus() == GameState.Status.START_SCREEN) {
+            drawStartScreen(g, engine);
             return;
         }
 
@@ -130,6 +146,38 @@ public class GameRenderer {
         g.setFont(HUD_FONT);
         int hintX = (GamePanel.WIDTH - g.getFontMetrics().stringWidth(hint)) / 2;
         g.drawString(hint, hintX, y + 38);
+
+        if (gameState.getStatus() == GameState.Status.GAME_OVER) {
+            drawCenteredLine(g, "Final Score: " + gameState.getFinalScore(), y + 70);
+            drawCenteredLine(g, "High Score: " + engine.getHighScoreManager().getHighScore(), y + 96);
+        } else if (gameState.getStatus() == GameState.Status.LEVEL_CLEARED) {
+            String nextText = engine.canAdvanceLevel() ? "Press Enter for level "
+                    + (engine.getLevelManager().getLevel() + 1) : "Prepare for next level";
+            drawCenteredLine(g, nextText, y + 70);
+        }
+    }
+
+    private void drawStartScreen(Graphics2D g, GameEngine engine) {
+        g.setColor(new Color(0, 0, 0, 175));
+        g.fillRect(0, 0, GamePanel.WIDTH, GamePanel.HEIGHT);
+
+        g.setFont(MESSAGE_FONT);
+        g.setColor(TEXT_COLOR);
+        drawCenteredLine(g, "SPACE INVADER", 155);
+
+        g.setFont(new Font("SansSerif", Font.BOLD, 24));
+        drawCenteredLine(g, "High Score: " + engine.getHighScoreManager().getHighScore(), 205);
+
+        g.setFont(HUD_FONT);
+        drawCenteredLine(g, "Left / Right: Move", 270);
+        drawCenteredLine(g, "Space: Shoot", 300);
+        drawCenteredLine(g, "P: Pause", 330);
+        drawCenteredLine(g, "Enter: Start", 390);
+    }
+
+    private void drawCenteredLine(Graphics2D g, String text, int y) {
+        int x = (GamePanel.WIDTH - g.getFontMetrics().stringWidth(text)) / 2;
+        g.drawString(text, x, y);
     }
 
     private Color colorForAlien(Alien alien) {
@@ -174,7 +222,7 @@ public class GameRenderer {
         }
 
         if (status == GameState.Status.LEVEL_CLEARED) {
-            return "Next level incoming";
+            return "Wave destroyed";
         }
 
         return "Press Enter to restart";

@@ -6,9 +6,8 @@ import javax.swing.JPanel;
 import javax.swing.Timer;
 
 public class GamePanel extends JPanel {
-    public static final int WIDTH = 800;
-    public static final int HEIGHT = 600;
-    private static final int FRAME_DELAY_MS = 16;
+    public static final int WIDTH = GameConfig.BOARD_WIDTH;
+    public static final int HEIGHT = GameConfig.BOARD_HEIGHT;
 
     private final GameEngine engine;
     private final GameRenderer renderer;
@@ -24,7 +23,7 @@ public class GamePanel extends JPanel {
         inputHandler.registerKeyBindings();
 
         // Swing Timer is the game loop. It updates game data, then asks Swing to repaint.
-        Timer timer = new Timer(FRAME_DELAY_MS, event -> {
+        Timer timer = new Timer(GameConfig.FRAME_DELAY_MS, event -> {
             engine.update();
             repaint();
         });
