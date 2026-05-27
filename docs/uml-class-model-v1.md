@@ -90,6 +90,111 @@ classDiagram
     GameRenderer ..> GameEngine : reads
 ```
 
+## Flowchart
+
+```mermaid
+flowchart TD
+    A[Main.main] --> B[Create GameWindow]
+    B --> C[Create GamePanel]
+    C --> D[Create GameEngine and GameRenderer]
+    C --> E[Register InputHandler key bindings]
+    C --> F[Start Swing Timer]
+
+    F --> G{Every timer tick}
+    G --> H[GameEngine.update]
+    H --> I{GameState is PLAYING?}
+    I -- No --> N[Skip game simulation]
+    I -- Yes --> J[Move player from input flags]
+    J --> K[Update bullets and alien fleet]
+    K --> L[CollisionManager checks player bullets vs aliens]
+    L --> M[Update score / win / game over state]
+    M --> O[GamePanel.repaint]
+    N --> O
+    O --> P[GameRenderer draws current state]
+
+    E --> Q{Key action}
+    Q -- Left / Right --> R[Set movement flags]
+    Q -- Space --> S[GameEngine.shoot]
+    Q -- R --> T[GameEngine.restart]
+```
+
+## Use Case Scenario
+
+### Scenario 1: Move and shoot
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Swing as Swing / GamePanel
+    participant Input as InputHandler
+    participant Engine as GameEngine
+    participant State as GameState / Models
+    participant Collision as CollisionManager
+    participant Renderer as GameRenderer
+
+    User->>Swing: Press Left / Right
+    Swing->>Input: Key event
+    Input->>Engine: Set movement flag
+    Swing->>Engine: Timer tick update()
+    Engine->>State: Move player and bullets
+    User->>Swing: Press Space
+    Swing->>Input: Key event
+    Input->>Engine: shoot()
+    Engine->>State: Add player bullet
+    Swing->>Engine: Next timer tick update()
+    Engine->>Collision: Check bullet vs alien
+    Collision-->>Engine: Collision result
+    Engine->>State: Update score or game status
+    Swing->>Renderer: repaint()
+    Renderer->>Engine: Read current state
+    Renderer-->>User: Draw latest board
+```
+
+| Step | User | Swing / GamePanel | InputHandler | GameEngine | GameState / Models | CollisionManager | GameRenderer |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | Presses Left or Right | Receives key event | Calls movement command | Stores movement flag | Player waits until timer update | - | - |
+| 2 | Waits for frame | Timer fires | - | Moves player and updates bullets | Player position changes | - | - |
+| 3 | Presses Space | Receives key event | Calls `shoot()` | Adds player bullet | Bullet list changes | - | - |
+| 4 | Watches bullet travel | Timer fires again | - | Updates bullet and aliens | Bullet/alien positions change | Checks bullet vs alien | - |
+| 5 | Hits alien | Calls `repaint()` | - | Applies collision result | Score/status changes | Reports destroyed alien | Draws latest board |
+
+1. User presses Left or Right.
+2. `InputHandler` updates the movement flag in `GameEngine`.
+3. Swing Timer calls `GameEngine.update()`, and the player moves.
+4. User presses Space, and `GameEngine.shoot()` adds a bullet.
+5. `CollisionManager` checks the bullet against aliens.
+6. `GameRenderer` redraws the current player, bullets, aliens, and score.
+
+### Scenario 2: Restart after end state
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Swing as Swing / GamePanel
+    participant Input as InputHandler
+    participant Engine as GameEngine
+    participant State as GameState / Models
+    participant Renderer as GameRenderer
+
+    User->>Swing: Press R
+    Swing->>Input: Key event
+    Input->>Engine: restart()
+    Engine->>State: Reset status, score, player, aliens, bullets
+    Swing->>Renderer: repaint()
+    Renderer->>Engine: Read reset state
+    Renderer-->>User: Draw new board
+```
+
+| Step | User | Swing / GamePanel | InputHandler | GameEngine | GameState / Models | GameRenderer |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | Presses R | Receives key event | Calls `restart()` | Starts reset flow | Current end state is replaced | - |
+| 2 | Waits for repaint | Calls `repaint()` | - | Exposes reset objects | Player, aliens, bullets, and status are reset | Draws new board |
+
+1. User presses R after winning or losing.
+2. `InputHandler` calls `GameEngine.restart()`.
+3. `GameEngine` resets state and model objects.
+4. `GameRenderer` draws the restarted board.
+
 ## Version 1 責任分工
 
 | Class | 責任 |
